@@ -1,18 +1,24 @@
 import AbstractView from './abstract-view.js';
 
 export default class TripEditView extends AbstractView {
-  constructor({ point, destinations = [], offersByType = {} } = {}) {
+  constructor({ point, destinations = [], offersByType = {}, onSubmit, onDelete, onClose } = {}) {
     super();
     this._point = point;
     this._destinations = destinations;
     this._offersByType = offersByType;
+    this._onSubmit = onSubmit;
+    this._onDelete = onDelete;
+    this._onClose = onClose;
   }
 
   getTemplate() {
-    if (!this._point) return '<div></div>';
+    if (!this._point) {
+      return this._getEmptyTemplate();
+    }
     
-    const { type, destination, startTime, endTime, price, offers = [] } = this._point;
+    const { type, destination, dateFrom, dateTo, basePrice, offers = [] } = this._point;
     const availableOffers = this._offersByType[type] || [];
+    const isNewPoint = !this._point.id || this._point.id.startsWith('temp-');
     
     const offersHtml = availableOffers.length > 0 ? `
       <section class="event__section event__section--offers">
@@ -38,6 +44,22 @@ export default class TripEditView extends AbstractView {
       </section>
     ` : '';
 
+    const destinationHtml = destination.description ? `
+      <section class="event__section event__section--destination">
+        <h3 class="event__section-title event__section-title--destination">Destination</h3>
+        <p class="event__destination-description">${destination.description}</p>
+        ${destination.photos && destination.photos.length > 0 ? `
+          <div class="event__photos-container">
+            <div class="event__photos-tape">
+              ${destination.photos.map(photo => `
+                <img class="event__photo" src="${photo.src}" alt="${photo.description}">
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </section>
+    ` : '';
+
     return `
       <li class="trip-events__item">
         <form class="event event--edit" action="#" method="post">
@@ -60,7 +82,7 @@ export default class TripEditView extends AbstractView {
                 id="event-destination-1" 
                 type="text" 
                 name="event-destination" 
-                value="${destination || ''}" 
+                value="${destination.name || ''}" 
                 list="destination-list-1"
               >
               <datalist id="destination-list-1">
@@ -72,10 +94,10 @@ export default class TripEditView extends AbstractView {
 
             <div class="event__field-group event__field-group--time">
               <label class="visually-hidden" for="event-start-time-1">From</label>
-              <input class="event__input event__input--time" id="event-start-time-1" type="text" name="event-start-time" value="${this._formatDateTime(startTime)}">
+              <input class="event__input event__input--time" id="event-start-time-1" type="text" name="event-start-time" value="${this._formatDateTime(dateFrom)}">
               &mdash;
               <label class="visually-hidden" for="event-end-time-1">To</label>
-              <input class="event__input event__input--time" id="event-end-time-1" type="text" name="event-end-time" value="${this._formatDateTime(endTime)}">
+              <input class="event__input event__input--time" id="event-end-time-1" type="text" name="event-end-time" value="${this._formatDateTime(dateTo)}">
             </div>
 
             <div class="event__field-group event__field-group--price">
@@ -83,19 +105,28 @@ export default class TripEditView extends AbstractView {
                 <span class="visually-hidden">Price</span>
                 &euro;
               </label>
-              <input class="event__input event__input--price" id="event-price-1" type="text" name="event-price" value="${price || ''}">
+              <input class="event__input event__input--price" id="event-price-1" type="text" name="event-price" value="${basePrice || ''}">
             </div>
 
             <button class="event__save-btn btn btn--blue" type="submit">Save</button>
-            <button class="event__reset-btn" type="reset">Delete</button>
+            <button class="event__reset-btn" type="reset">${isNewPoint ? 'Cancel' : 'Delete'}</button>
             <button class="event__rollup-btn" type="button">
-              <span class="visually-hidden">Open event</span>
+              <span class="visually-hidden">Close</span>
             </button>
           </header>
           <section class="event__details">
             ${offersHtml}
+            ${destinationHtml}
           </section>
         </form>
+      </li>
+    `;
+  }
+
+  _getEmptyTemplate() {
+    return `
+      <li class="trip-events__item">
+        <div class="event event--edit">Loading...</div>
       </li>
     `;
   }

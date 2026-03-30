@@ -7,7 +7,7 @@ export default class TripPointView extends AbstractView {
   }
 
   getTemplate() {
-    const { date, type, destination, startTime, endTime, duration, price, offers, isFavorite } = this._point;
+    const { dateFrom, dateTo, type, destination, basePrice, offers, isFavorite } = this._point;
     
     const offersHtml = offers && offers.length > 0 ? `
       <h4 class="visually-hidden">Offers:</h4>
@@ -22,24 +22,29 @@ export default class TripPointView extends AbstractView {
       </ul>
     ` : '';
 
+    const formattedDate = this._formatDate(dateFrom);
+    const startTime = this._formatTime(dateFrom);
+    const endTime = this._formatTime(dateTo);
+    const duration = this._calculateDuration(dateFrom, dateTo);
+
     return `
       <li class="trip-events__item">
         <div class="event">
-          <time class="event__date" datetime="${date}">${this._formatDate(date)}</time>
+          <time class="event__date" datetime="${dateFrom.split('T')[0]}">${formattedDate}</time>
           <div class="event__type">
             <img class="event__type-icon" width="42" height="42" src="img/icons/${type}.png" alt="Event type icon">
           </div>
-          <h3 class="event__title">${this._capitalize(type)} ${destination}</h3>
+          <h3 class="event__title">${this._capitalize(type)} ${destination.name}</h3>
           <div class="event__schedule">
             <p class="event__time">
-              <time class="event__start-time" datetime="${startTime}">${this._formatTime(startTime)}</time>
+              <time class="event__start-time" datetime="${dateFrom}">${startTime}</time>
               &mdash;
-              <time class="event__end-time" datetime="${endTime}">${this._formatTime(endTime)}</time>
+              <time class="event__end-time" datetime="${dateTo}">${endTime}</time>
             </p>
             <p class="event__duration">${duration}</p>
           </div>
           <p class="event__price">
-            &euro;&nbsp;<span class="event__price-value">${price}</span>
+            &euro;&nbsp;<span class="event__price-value">${basePrice}</span>
           </p>
           ${offersHtml}
           <button class="event__favorite-btn ${isFavorite ? 'event__favorite-btn--active' : ''}" type="button">
@@ -64,6 +69,21 @@ export default class TripPointView extends AbstractView {
   _formatTime(timeString) {
     const date = new Date(timeString);
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+
+  _calculateDuration(start, end) {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const diffMs = endDate - startDate;
+    
+    const diffMins = Math.floor(diffMs / 60000);
+    const hours = Math.floor(diffMins / 60);
+    const mins = diffMins % 60;
+    
+    if (hours > 0) {
+      return `${hours.toString().padStart(2, '0')}H ${mins.toString().padStart(2, '0')}M`;
+    }
+    return `${mins}M`;
   }
 
   _capitalize(str) {

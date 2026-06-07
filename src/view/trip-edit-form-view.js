@@ -10,13 +10,6 @@ const DATE_FORMAT = 'DD/MM/YY HH:mm';
 
 const createPointFromState = (state) => state.point;
 
-const shake = (element) => {
-  element.style.animation = 'shake 0.6s';
-  setTimeout(() => {
-    element.style.animation = '';
-  }, 600);
-};
-
 export default class EditFormView extends AbstractStatefulView {
   #destinations = [];
   #offersByType = {};
@@ -88,17 +81,18 @@ export default class EditFormView extends AbstractStatefulView {
             <div class="event__field-group  event__field-group--destination">
               <label class="event__label  event__type-output">${capitalize(type)}</label>
               <select class="event__input  event__input--destination" name="event-destination" ${isDisabled ? 'disabled' : ''}>
+                <option value="" ${!point.destinationId ? 'selected' : 'disabled'} hidden>Choose destination</option>
                 ${this.#destinations.map((d) => `
-                  <option value="${d.id}" ${d.id === point.destinationId ? 'selected' : ''}>
+                  <option value="${d.id}" ${String(d.id) === String(point.destinationId) ? 'selected' : ''}>
                     ${d.name}
                   </option>
                 `).join('')}
               </select>
             </div>
-
             <div class="event__field-group  event__field-group--time">
               <input
                 class="event__input event__input--time"
+                id="event-start-time-${uniqueId}"
                 type="text"
                 name="event-start-time"
                 value="${dayjs(dateFrom).format(DATE_FORMAT)}"
@@ -107,6 +101,7 @@ export default class EditFormView extends AbstractStatefulView {
               —
               <input
                 class="event__input event__input--time"
+                id="event-end-time-${uniqueId}"
                 type="text"
                 name="event-end-time"
                 value="${dayjs(dateTo).format(DATE_FORMAT)}"
@@ -120,9 +115,9 @@ export default class EditFormView extends AbstractStatefulView {
             </div>
 
             <button class="event__save-btn  btn  btn--blue" type="submit" ${isDisabled ? 'disabled' : ''}>${saveText}</button>
-            <button class="event__reset-btn" type="button" ${isDisabled ? 'disabled' : ''}>${deleteText}</button>
+            <button class="event__reset-btn" type="button">${deleteText}</button>
 
-            <button class="event__rollup-btn" type="button" ${isDisabled ? 'disabled' : ''}>
+            <button class="event__rollup-btn" type="button">
               <span class="visually-hidden">Open event</span>
             </button>
           </header>
@@ -147,10 +142,21 @@ export default class EditFormView extends AbstractStatefulView {
               </section>
             ` : ''}
 
-            <section class="event__section  event__section--destination">
-              <h3 class="event__section-title  event__section-title--destination">Destination</h3>
-              <p class="event__destination-description">${destination?.description ?? ''}</p>
-            </section>
+            ${destination && (destination.description || (destination.pictures && destination.pictures.length > 0)) ? `
+              <section class="event__section  event__section--destination">
+                <h3 class="event__section-title  event__section-title--destination">Destination</h3>
+                <p class="event__destination-description">${destination.description || ''}</p>
+                ${destination.pictures && destination.pictures.length > 0 ? `
+                  <div class="event__photos-container">
+                    <div class="event__photos-tape">
+                      ${destination.pictures.map((picture) => `
+                        <img class="event__photo" src="${picture.src}" alt="${picture.description}">
+                      `).join('')}
+                    </div>
+                  </div>
+                ` : ''}
+              </section>
+            ` : ''}
           </section>
         </form>
       </li>
@@ -217,6 +223,11 @@ export default class EditFormView extends AbstractStatefulView {
 
   #formSubmitHandler = (evt) => {
     evt.preventDefault();
+
+    if (this._state.isDisabled) {
+      return;
+    }
+
     this.#handleFormSubmit(createPointFromState(this._state));
   };
 
@@ -227,6 +238,11 @@ export default class EditFormView extends AbstractStatefulView {
 
   #deleteClickHandler = (evt) => {
     evt.preventDefault();
+
+    if (this._state.isDisabled) {
+      return;
+    }
+
     this.#handleDeleteClick(createPointFromState(this._state));
   };
 
@@ -251,15 +267,15 @@ export default class EditFormView extends AbstractStatefulView {
   };
 
   #destinationChangeHandler = (evt) => {
-    const newDestinationId = evt.target.value;
-    const newDestination = this.#destinations.find((d) => d.id === newDestinationId);
+    const newValue = evt.target.value;
+    const newDestination = this.#destinations.find((d) => String(d.id) === String(newValue) || d.name === newValue);
 
     this._setState({
       point: {
         ...this._state.point,
-        destinationId: newDestinationId,
+        destinationId: newDestination?.id || '',
       },
-      destination: newDestination,
+      destination: newDestination || null,
     });
 
     this.updateElement();
@@ -345,6 +361,6 @@ export default class EditFormView extends AbstractStatefulView {
     });
 
     this.updateElement();
-    shake(this.getElement());
+    this.shake();
   }
 }

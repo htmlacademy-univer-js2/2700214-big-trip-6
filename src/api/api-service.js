@@ -49,7 +49,9 @@ export default class ApiService {
     });
 
     if (!response.ok) {
-      throw new Error(`${method} ${url} failed: ${response.status} ${response.statusText}`);
+      const error = new Error(`${method} ${url} failed: ${response.status} ${response.statusText}`);
+      error.status = response.status;
+      throw error;
     }
 
     return response;

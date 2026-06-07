@@ -54,6 +54,7 @@ export default class Presenter {
 
   #newEventButton = null;
   #creatingComponent = null;
+  #isCreateFormOpen = false;
 
   constructor({pointsModel, filterModel}) {
     this.#pointsModel = pointsModel;
@@ -284,6 +285,7 @@ export default class Presenter {
     if (this.#creatingComponent) {
       remove(this.#creatingComponent);
       this.#creatingComponent = null;
+      this.#detachCreateFormKeydownListener();
       this.#newEventButton.disabled = false;
     }
   };
@@ -304,7 +306,9 @@ export default class Presenter {
         case UserAction.ADD_POINT:
           this.#creatingComponent?.setSaving();
           await this.#pointsModel.addPoint(update);
+          this.#creatingComponent && remove(this.#creatingComponent);
           this.#creatingComponent = null;
+          this.#detachCreateFormKeydownListener();
           this.#newEventButton.disabled = false;
           break;
 
@@ -321,8 +325,45 @@ export default class Presenter {
         return;
       }
 
+      if (actionType === UserAction.DELETE_POINT && err.status === 404) {
+        this.#pointsModel.setPoints(this.#pointsModel.getPoints().filter((point) => point.id !== update.id));
+        this.#filtersPresenter?.init();
+        this.#renderTripInfo();
+        this.#renderByState(this.#pointsModel.getPoints());
+        return;
+      }
+
       pointPresenter?.setAborting();
     }
+  };
+
+  #handleCreateFormKeydown = (evt) => {
+    if (evt.key === 'Escape' || evt.key === 'Esc') {
+      evt.preventDefault();
+      this.#handleCreateClose();
+    }
+  };
+
+  #attachCreateFormKeydownListener = () => {
+    if (!this.#isCreateFormOpen) {
+      document.addEventListener('keydown', this.#handleCreateFormKeydown);
+      this.#isCreateFormOpen = true;
+    }
+  };
+
+  #detachCreateFormKeydownListener = () => {
+    if (this.#isCreateFormOpen) {
+      document.removeEventListener('keydown', this.#handleCreateFormKeydown);
+      this.#isCreateFormOpen = false;
+    }
+  };
+
+  #handleCreateClose = () => {
+    this.#newEventButton.disabled = false;
+    remove(this.#creatingComponent);
+    this.#creatingComponent = null;
+    this.#detachCreateFormKeydownListener();
+    this.#renderByState(this.#pointsModel.getPoints());
   };
 
   #handleNewEventClick = () => {
@@ -349,11 +390,10 @@ export default class Presenter {
     const listElement = this.#tripListComponent.getElement();
 
     const now = new Date();
-    const defaultDestination = this.#pointsModel.destinations[0];
 
     const newPoint = {
-      type: 'taxi',
-      destinationId: defaultDestination.id,
+      type: 'flight',
+      destinationId: '',
       offersIds: [],
       basePrice: 0,
       dateFrom: now,
@@ -365,29 +405,25 @@ export default class Presenter {
 
     this.#creatingComponent = new EditFormView({
       point: newPoint,
-      destination: defaultDestination,
+      destination: null,
       destinations: this.#pointsModel.destinations,
       offersByType: this.#pointsModel.offersByType,
+      isCreateMode: true,
 
       onFormSubmit: (createdPoint) => {
         this.#handleViewAction(UserAction.ADD_POINT, createdPoint, null);
       },
 
       onRollupClick: () => {
-        this.#newEventButton.disabled = false;
-        remove(this.#creatingComponent);
-        this.#creatingComponent = null;
-        this.#renderByState(this.#pointsModel.getPoints());
-      },
+          this.#handleCreateClose();
+        },
 
-      onDeleteClick: () => {
-        this.#newEventButton.disabled = false;
-        remove(this.#creatingComponent);
-        this.#creatingComponent = null;
-        this.#renderByState(this.#pointsModel.getPoints());
-      },
-    });
+        onDeleteClick: () => {
+          this.#handleCreateClose();
+        },
+      });
 
     render(this.#creatingComponent, listElement, RenderPosition.AFTERBEGIN);
+    this.#attachCreateFormKeydownListener();
   };
 }

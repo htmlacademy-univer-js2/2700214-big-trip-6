@@ -3,7 +3,7 @@ import duration from 'dayjs/plugin/duration';
 
 dayjs.extend(duration);
 
-const formatEventDate = (date) => dayjs(date).format('MMM DD').toUpperCase();
+const formatEventDate = (date) => dayjs(date).format('DD MMM').toUpperCase();
 
 const formatEventTime = (date) => dayjs(date).format('HH:mm');
 
@@ -15,23 +15,18 @@ const formatDuration = (dateFrom, dateTo) => {
   const hours = durationValue.hours();
   const minutes = durationValue.minutes();
 
+  const hoursPart = ` ${String(hours).padStart(2, '0')}H`;
+  const minutesPart = ` ${String(minutes).padStart(2, '0')}M`;
+
   if (diffMs < 60 * 60 * 1000) {
-    return `${minutes}M`;
+    return `00H${minutesPart}`;
   }
 
   if (diffMs < 24 * 60 * 60 * 1000) {
-    if (minutes === 0) {
-      return `${String(hours).padStart(2, '0')}H`;
-    }
-
-    return `${String(hours).padStart(2, '0')}H ${String(minutes).padStart(2, '0')}M`;
+    return `${String(hours).padStart(2, '0')}H${minutesPart}`;
   }
 
-  const dayPart = `${String(days).padStart(2, '0')}D`;
-  const hourPart = hours ? ` ${String(hours).padStart(2, '0')}H` : '';
-  const minutePart = minutes ? ` ${String(minutes).padStart(2, '0')}M` : '';
-
-  return `${dayPart}${hourPart}${minutePart}`.trim();
+  return `${String(days).padStart(2, '0')}D${hoursPart}${minutesPart}`.trim();
 };
 
 const formatTripDates = (dateFrom, dateTo) => {
@@ -39,10 +34,10 @@ const formatTripDates = (dateFrom, dateTo) => {
   const endDate = dayjs(dateTo);
 
   if (startDate.isSame(endDate, 'month')) {
-    return `${startDate.format('MMM DD')} — ${endDate.format('DD')}`.toUpperCase();
+    return `${startDate.format('DD MMM')} — ${endDate.format('DD')}`.toUpperCase();
   }
 
-  return `${startDate.format('MMM DD')} — ${endDate.format('MMM DD')}`.toUpperCase();
+  return `${startDate.format('DD MMM')} — ${endDate.format('DD MMM')}`.toUpperCase();
 };
 
 export {formatEventDate, formatEventTime, formatDuration, formatTripDates};

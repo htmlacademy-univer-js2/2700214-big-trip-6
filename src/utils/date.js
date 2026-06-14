@@ -3,7 +3,7 @@ import duration from 'dayjs/plugin/duration';
 
 dayjs.extend(duration);
 
-const formatEventDate = (date) => dayjs(date).format('DD MMM').toUpperCase();
+const formatEventDate = (date) => dayjs(date).format('MMM DD');
 
 const formatEventTime = (date) => dayjs(date).format('HH:mm');
 

@@ -17,7 +17,7 @@ export default class TripPresenter {
     this._filterModel = filterModel;
     this._destinationsModel = destinationsModel;
     this._offersModel = offersModel;
-    
+
     this._tripInfoComponent = null;
     this._sortComponent = null;
     this._listComponent = null;
@@ -28,16 +28,16 @@ export default class TripPresenter {
     this._currentPointId = null;
     this._currentSortType = SortType.DAY;
     this._isLoading = true;
-    
+
     this._handleModelEvent = this._handleModelEvent.bind(this);
     this._handleNewEventClick = this._handleNewEventClick.bind(this);
     this._handleDocumentKeydown = this._handleDocumentKeydown.bind(this);
-    
+
     this._uiBlocker = new UiBlocker({
       lowerLimit: 500,
       upperLimit: 1000
     });
-    
+
     this._pointsModel.addObserver(this._handleModelEvent);
     this._filterModel.addObserver(this._handleModelEvent);
     this._destinationsModel.addObserver(this._handleModelEvent);
@@ -46,24 +46,24 @@ export default class TripPresenter {
 
   async init(container) {
     this._container = container;
-    
+
     this._renderTripInfo();
     this._renderSort();
     this._renderList();
-    
+
     // Ждем загрузки всех данных
     await Promise.all([
       this._pointsModel.init(),
       this._destinationsModel.init(),
       this._offersModel.init()
     ]);
-    
+
     this._isLoading = false;
     this._renderPoints();
-    
+
     // Навешиваем обработчик на кнопку New event
     this._initAddButton();
-    
+
     document.addEventListener('keydown', this._handleDocumentKeydown);
   }
 
@@ -76,9 +76,6 @@ export default class TripPresenter {
       addButton.addEventListener('click', this._handleNewEventClick);
       // Разблокируем кнопку, если она заблокирована
       addButton.disabled = false;
-      console.log('Add button initialized');
-    } else {
-      console.error('Add button not found');
     }
   }
 
@@ -118,43 +115,43 @@ export default class TripPresenter {
       this._renderLoading();
       return;
     }
-    
+
     if (this._pointsModel.error) {
       this._renderError();
       return;
     }
-    
+
     this._clearPointsList();
-    
+
     const points = this._getSortedPoints();
     const destinations = this._destinationsModel.getDestinations();
-    
+
     if (points.length === 0) {
       this._renderEmptyMessage();
       return;
     }
-    
+
     // Обогащаем точки данными направлений
-    const enrichedPoints = points.map(point => ({
+    const enrichedPoints = points.map((point) => ({
       ...point,
-      destination: destinations.find(d => d.id === point.destinationId)
+      destination: destinations.find((d) => d.id === point.destinationId)
     }));
-    
-    enrichedPoints.forEach(point => {
+
+    enrichedPoints.forEach((point) => {
       this._renderPoint(point);
     });
-    
+
     this._updateTripInfo();
   }
 
   _renderPoint(point) {
     const listContainer = this._listComponent.element;
-    
+
     const pointComponent = new TripPointView({
       point,
       onEditClick: () => this._handleEditClick(point.id)
     });
-    
+
     this._pointComponents.set(point.id, pointComponent);
     render(pointComponent, listContainer);
   }
@@ -165,17 +162,17 @@ export default class TripPresenter {
       listContainer.innerHTML = '';
     }
     this._pointComponents.clear();
-    
+
     if (this._loadingComponent) {
       remove(this._loadingComponent);
       this._loadingComponent = null;
     }
-    
+
     if (this._errorComponent) {
       remove(this._errorComponent);
       this._errorComponent = null;
     }
-    
+
     if (this._editComponent) {
       remove(this._editComponent);
       this._editComponent = null;
@@ -191,7 +188,7 @@ export default class TripPresenter {
       present: 'There are no present events now',
       past: 'There are no past events now'
     };
-    
+
     const message = messages[currentFilter] || messages.everything;
     const emptyMessageComponent = document.createElement('p');
     emptyMessageComponent.className = 'trip-events__msg';
@@ -203,11 +200,11 @@ export default class TripPresenter {
     if (this._tripInfoComponent) {
       const points = this._pointsModel.getPoints();
       const destinations = this._destinationsModel.getDestinations();
-      const enrichedPoints = points.map(point => ({
+      const enrichedPoints = points.map((point) => ({
         ...point,
-        destination: destinations.find(d => d.id === point.destinationId)
+        destination: destinations.find((d) => d.id === point.destinationId)
       }));
-      
+
       const newTripInfoComponent = new TripInfoView({ points: enrichedPoints, destinations });
       replace(newTripInfoComponent, this._tripInfoComponent);
       this._tripInfoComponent = newTripInfoComponent;
@@ -219,11 +216,11 @@ export default class TripPresenter {
     if (tripMain) {
       const points = this._pointsModel.getPoints();
       const destinations = this._destinationsModel.getDestinations();
-      const enrichedPoints = points.map(point => ({
+      const enrichedPoints = points.map((point) => ({
         ...point,
-        destination: destinations.find(d => d.id === point.destinationId)
+        destination: destinations.find((d) => d.id === point.destinationId)
       }));
-      
+
       this._tripInfoComponent = new TripInfoView({ points: enrichedPoints, destinations });
       render(this._tripInfoComponent, tripMain, RenderPosition.AFTERBEGIN);
     }
@@ -249,7 +246,9 @@ export default class TripPresenter {
   }
 
   _handleSortChange(sortType) {
-    if (this._currentSortType === sortType) return;
+    if (this._currentSortType === sortType) {
+      return;
+    }
     this._currentSortType = sortType;
     this._clearPointsList();
     this._renderPoints();
@@ -257,13 +256,15 @@ export default class TripPresenter {
 
   _handleEditClick(pointId) {
     const points = this._pointsModel.getPoints();
-    const point = points.find(p => p.id === pointId);
-    if (!point) return;
-    
+    const point = points.find((p) => p.id === pointId);
+    if (!point) {
+      return;
+    }
+
     if (this._currentPointId) {
       this._closeEditForm();
     }
-    
+
     this._currentPointId = pointId;
     this._replacePointToEditForm(point);
   }
@@ -273,11 +274,11 @@ export default class TripPresenter {
     const offersByType = this._getOffersByType();
     const enrichedPoint = {
       ...point,
-      destination: destinations.find(d => d.id === point.destinationId)
+      destination: destinations.find((d) => d.id === point.destinationId)
     };
-    
+
     const oldComponent = this._pointComponents.get(point.id);
-    
+
     this._editComponent = new TripEditView({
       point: enrichedPoint,
       destinations,
@@ -286,14 +287,14 @@ export default class TripPresenter {
       onDelete: () => this._handleEditDelete(),
       onClose: () => this._handleEditClose()
     });
-    
+
     replace(this._editComponent, oldComponent);
   }
 
   async _handleEditSubmit(updatedPoint) {
     const destinations = this._destinationsModel.getDestinations();
-    const destination = destinations.find(d => d.name === updatedPoint.destination);
-    
+    const destination = destinations.find((d) => d.name === updatedPoint.destination);
+
     const pointToUpdate = {
       id: this._currentPointId,
       type: updatedPoint.type,
@@ -301,12 +302,12 @@ export default class TripPresenter {
       dateFrom: updatedPoint.dateFrom,
       dateTo: updatedPoint.dateTo,
       basePrice: updatedPoint.basePrice,
-      offers: updatedPoint.offers.map(o => o.id),
-      isFavorite: this._pointsModel.getPoints().find(p => p.id === this._currentPointId)?.isFavorite || false
+      offers: updatedPoint.offers.map((o) => o.id),
+      isFavorite: this._pointsModel.getPoints().find((p) => p.id === this._currentPointId)?.isFavorite || false
     };
-    
+
     this._uiBlocker.block();
-    
+
     try {
       await this._pointsModel.updatePoint(pointToUpdate);
       this._closeEditForm();
@@ -321,7 +322,7 @@ export default class TripPresenter {
 
   async _handleEditDelete() {
     this._uiBlocker.block();
-    
+
     try {
       await this._pointsModel.deletePoint(this._currentPointId);
       this._closeEditForm();
@@ -339,42 +340,38 @@ export default class TripPresenter {
   }
 
   async _handleNewEventClick() {
-    console.log('New event button clicked');
-    
     // Закрываем любую открытую форму
     if (this._editComponent) {
       this._closeEditForm();
     }
-    
+
     // Сбрасываем фильтр на "everything"
     this._filterModel.setFilter('UPDATE', 'everything');
     this._currentSortType = SortType.DAY;
-    
+
     // Очищаем список точек
     this._clearPointsList();
-    
+
     this._currentPointId = null;
     await this._renderCreateForm();
   }
 
   async _renderCreateForm() {
-    console.log('Rendering create form');
     const destinations = this._destinationsModel.getDestinations();
     const offersByType = this._getOffersByType();
     const now = dayjs();
-    
+
     const emptyPoint = {
       id: `temp-${Date.now()}`,
       type: 'flight',
-      destination: '',
+      destinationId: '',
       dateFrom: now.toISOString(),
       dateTo: now.add(1, 'hour').toISOString(),
       basePrice: 0,
       offers: [],
-      isFavorite: false,
-      destination: null
+      isFavorite: false
     };
-    
+
     this._editComponent = new TripEditView({
       point: emptyPoint,
       destinations,
@@ -382,7 +379,7 @@ export default class TripPresenter {
       onSubmit: (newPoint) => this._handleCreateSubmit(newPoint),
       onClose: () => this._handleCreateClose()
     });
-    
+
     const listContainer = this._listComponent.element;
     if (listContainer) {
       listContainer.innerHTML = '';
@@ -391,27 +388,25 @@ export default class TripPresenter {
   }
 
   async _handleCreateSubmit(newPoint) {
-    console.log('Create submit:', newPoint);
     const destinations = this._destinationsModel.getDestinations();
-    const destination = destinations.find(d => d.name === newPoint.destination);
-    
+    const destination = destinations.find((d) => d.name === newPoint.destination);
+
     const pointToAdd = {
       type: newPoint.type,
       destinationId: destination?.id || '',
       dateFrom: newPoint.dateFrom,
       dateTo: newPoint.dateTo,
       basePrice: newPoint.basePrice,
-      offers: newPoint.offers.map(o => o.id),
+      offers: newPoint.offers.map((o) => o.id),
       isFavorite: false
     };
-    
+
     this._uiBlocker.block();
-    
+
     try {
       await this._pointsModel.addPoint(pointToAdd);
       this._closeEditForm();
     } catch (err) {
-      console.error('Create error:', err);
       if (this._editComponent) {
         this._editComponent.shake();
       }
@@ -421,7 +416,6 @@ export default class TripPresenter {
   }
 
   _handleCreateClose() {
-    console.log('Create close');
     this._closeEditForm();
     this._renderPoints();
   }
@@ -438,7 +432,7 @@ export default class TripPresenter {
   _getOffersByType() {
     const offersByType = {};
     const offers = this._offersModel.getOffers();
-    offers.forEach(group => {
+    offers.forEach((group) => {
       offersByType[group.type] = group.offers;
     });
     return offersByType;

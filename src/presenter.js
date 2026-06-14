@@ -306,7 +306,9 @@ export default class Presenter {
         case UserAction.ADD_POINT:
           this.#creatingComponent?.setSaving();
           await this.#pointsModel.addPoint(update);
-          this.#creatingComponent && remove(this.#creatingComponent);
+          if (this.#creatingComponent) {
+            remove(this.#creatingComponent);
+          }
           this.#creatingComponent = null;
           this.#detachCreateFormKeydownListener();
           this.#newEventButton.disabled = false;
@@ -316,7 +318,6 @@ export default class Presenter {
           break;
       }
 
-      this.#filtersPresenter?.init();
       this.#renderTripInfo();
       this.#renderByState(this.#pointsModel.getPoints());
     } catch (err) {
@@ -415,13 +416,13 @@ export default class Presenter {
       },
 
       onRollupClick: () => {
-          this.#handleCreateClose();
-        },
+        this.#handleCreateClose();
+      },
 
-        onDeleteClick: () => {
-          this.#handleCreateClose();
-        },
-      });
+      onDeleteClick: () => {
+        this.#handleCreateClose();
+      },
+    });
 
     render(this.#creatingComponent, listElement, RenderPosition.AFTERBEGIN);
     this.#attachCreateFormKeydownListener();
